@@ -4,6 +4,7 @@ const letterArray = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 const numberArray = ['1', '2', '3', '4', '5', '6', '7', '8']
 let blackCheckers = document.querySelectorAll('.black-checker')
 let whiteCheckers = document.querySelectorAll('.white-checker')
+let board = document.querySelector('.board')
 let blackBlocks
 let activeBlocks
 
@@ -36,7 +37,6 @@ class Checker {
 }
 //Отрисовка доски с присвоением клеткам (не шашкам) id (строка 50) через вспомогательный массив letterArray.
 function drawCheckers() {
-  let board = document.querySelector('.board')
   let block
   let flag = true
 
@@ -58,7 +58,7 @@ function drawCheckers() {
   }
   //Расстановка шашек на доске и создание массива объектов шашек с присвоением значений свойства color, где 1 - белая шашка, 2 - чёрная шашка, 0 - пустая клетка.
   blackBlocks = document.querySelectorAll('.black')
-  for (blackBlock of blackBlocks) {
+  for (let blackBlock of blackBlocks) {
     let checker = document.createElement('div')
     if (+blackBlock.id[1] <= 3) {
       checker.className = 'checker white-checker'
@@ -86,17 +86,17 @@ function drawCheckers() {
 function drawSquareTitles() {
   let horizontalTitle = document.querySelectorAll('.square-titles-horizontal')
   let verticalTitle = document.querySelectorAll('.square-titles-vertical')
-  for (letter of horizontalTitle) {
+  for (let letter of horizontalTitle) {
     for (i = 0; i < 8; i++) {
-      createLetter = document.createElement('div')
+      let createLetter = document.createElement('div')
       createLetter.className = 'square-letter'
       createLetter.textContent = letterArray[i]
       letter.appendChild(createLetter)
     }
   }
-  for (number of verticalTitle) {
+  for (let number of verticalTitle) {
     for (i = 1; i <= 8; i++) {
-      createNumber = document.createElement('div')
+      let createNumber = document.createElement('div')
       createNumber.className = 'square-number'
       createNumber.textContent = i
       number.appendChild(createNumber)
@@ -106,6 +106,8 @@ function drawSquareTitles() {
 
 drawCheckers()
 drawSquareTitles()
+moveTransition(true)
+addEventToBoard()
 
 //Показ хода
 function showMoves(checker) {
@@ -152,9 +154,7 @@ function makeMove(activeBlackBlock) {
 
   // console.log(newChecker);
 
-  let removedCheckerDiv = document.querySelector(
-    `#${movedChecker.name}`
-  ).firstElementChild // сам div-шашка
+  let removedCheckerDiv = document.querySelector(`#${movedChecker.name}`).firstElementChild // сам div-шашка
 
   // console.log(removedCheckerDiv);
 
@@ -170,43 +170,52 @@ function makeMove(activeBlackBlock) {
   removedCheckerDiv.className = ''
   movedChecker.color = 0
   movedChecker.active = false
-  turn = !turn //переход хода
+  moveTransition()
   for (blackBlock of blackBlocks) {
     blackBlock.classList.remove('active-block')
   }
   // console.log(checkersArray);
 }
-
-document.body.addEventListener('click', function (e) {
-  let clickedChecker = e.target
-  // console.log(clickedChecker);
-  let checkerColor
-  if (turn) {
-    checkerColor = 'white-checker'
-  } else {
-    checkerColor = 'black-checker'
-  }
-  if (clickedChecker.classList.contains(checkerColor)) {
-    let pressedChecker = checkersArray.find(
-      (o) => o.name === clickedChecker.parentElement.id
-    )
-    pressedChecker.active = true
-    //Меняем значение свойства active на false у всех остальных шашек, кроме кликнутой, т.к. должна быть только одна шашка со значением active.
-    for (i = 0; i < checkersArray.length; i++) {
-      if (
-        checkersArray[i].active === true &&
-        checkersArray[i].name !== pressedChecker.name
-      ) {
-        checkersArray[i].active = false
-      }
+// переход хода
+function moveTransition(firsrMove = false) {
+  let findChecker
+  if (!firsrMove) turn = !turn
+  let color = turn ? 'white' : 'black'
+  findChecker = document.querySelectorAll(`.checker`)
+  for (let checker of findChecker) {
+    checker.classList.remove('player-turn')
+    if (checker.classList.contains(`${color}-checker`)) {
+      checker.classList.add('player-turn')
     }
-    showMoves(clickedChecker)
   }
-})
+}
 
-document.body.addEventListener('click', function (e) {
-  let clickedActiveBlock = e.target
-  if (clickedActiveBlock.classList.contains('active-block')) {
-    makeMove(clickedActiveBlock)
-  }
-})
+function addEventToBoard() {
+  board.addEventListener('click', function (e) {
+    let clickedChecker = e.target
+    let isClickActiveBlock = clickedChecker.classList.contains('active-block')
+
+    // если ход другого игрока и клик мимо 'active-block' выходим из функции (return)
+    if (!clickedChecker.classList.contains('player-turn') && !isClickActiveBlock) {
+      return
+    }
+
+    let checkerColor
+    if (turn) {
+      checkerColor = 'white-checker'
+    } else {
+      checkerColor = 'black-checker'
+    }
+    if (clickedChecker.classList.contains(checkerColor)) {
+      checkersArray.forEach((item) => {
+        if (item.name === clickedChecker.parentElement.id) {
+          item.active = true
+        }
+      })
+      showMoves(clickedChecker)
+    }
+    if (isClickActiveBlock) {
+      makeMove(clickedChecker)
+    }
+  })
+}
