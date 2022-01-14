@@ -8,7 +8,9 @@ let whiteCheckers = document.querySelectorAll('.white-checker')
 let board = document.querySelector('.board')
 let blackBlocks
 let activeBlocks
-
+// шашку можно съесть
+let ahtung = null
+let squareForAttackMove = null
 class Checker {
   constructor(coordinate) {
     this.name = coordinate
@@ -63,12 +65,21 @@ function drawCheckers() {
   blackBlocks = document.querySelectorAll('.black')
   for (let blackBlock of blackBlocks) {
     let checker = document.createElement('div')
+    let toNumberLetter = letterArray.findIndex(item => item === blackBlock.id[0])
     if (+blackBlock.id[1] <= 3) {
       checker.className = 'checker white-checker'
+      checker.setAttribute('position', blackBlock.id) 
+      checker.setAttribute('active', false)
+      checker.setAttribute('color', 'white')
+      checker.setAttribute('forMove', `${toNumberLetter}${blackBlock.id[1]}`)
 
       blackBlock.appendChild(checker)
     } else if (+blackBlock.id[1] >= 6) {
       checker.className = 'checker black-checker'
+      checker.setAttribute('position', blackBlock.id) 
+      checker.setAttribute('active', false)
+      checker.setAttribute('color', 'white')
+      checker.setAttribute('forMove', `${toNumberLetter}${blackBlock.id[1]}`)
       blackBlock.appendChild(checker)
     } else {
       blackBlock.appendChild(checker)
@@ -151,20 +162,30 @@ function showMoves(checker) {
   for (let blackBlock of blackBlocks) {
     blackBlock.classList.remove('active-block')
   }
+  // поменять active
+  checker.setAttribute('active', true)
+
   let currentChecker = checkersArray.find(
     (o) => o.name === checker.parentElement.id
   )
   let checkedSquares = checkSquares(currentChecker)
+  // let position = checker.getAttribute('position')
+  console.log('currentChecker', currentChecker)
 
   for (i = 0; i < checkedSquares.length; i++) {
     let checkedSquare = checkersArray.find((o) => o.name === checkedSquares[i])
+
     let square = document.querySelector(`#${checkedSquare.name}`)
     //если шашка атакующая, то рядом с ней есть атакуемая, а значит подсвечивается следующая клетка за атакуемой
     if (currentChecker.attacking == true && checkedSquare.attacked == true) {
+    console.warn('checkedSquare', checkedSquare)
+      ahtung = document.querySelector(`#${checkedSquare.name}`)
+      console.log('ahtung', ahtung)
       squareForAttackMove = checkAttackPossibility(
         currentChecker,
         checkedSquare
       )
+      console.warn('squareForAttackMove', squareForAttackMove)
       square = document.querySelector(`#${squareForAttackMove}`)
       square.classList.add('active-block')
     } else if (
@@ -182,8 +203,8 @@ function checkAttackPossibility(attackingChecker, attackedChecker) {
   let squareToAttack = ''
   let squareToAttackFirstSymbol
   let squareToAttackSecondSymbol
-  // console.log(attackingChecker);
-  // console.log(attackedChecker);
+  // console.log('атакующая шашка',attackingChecker);
+  // console.log('Съедаемая шашка', attackedChecker);
   if (
     attackingChecker.color == attackedChecker.color ||
     attackedChecker.color == 0 ||
@@ -206,7 +227,6 @@ function checkAttackPossibility(attackingChecker, attackedChecker) {
     squareToAttackSecondSymbol = numberArray[indexNumberAttacked + 1]
   }
   squareToAttack = squareToAttackFirstSymbol + squareToAttackSecondSymbol
-  // console.log(squareToAttack);
   if (!squareToAttack) {
     return
   }
@@ -226,9 +246,15 @@ function checkAttackPossibility(attackingChecker, attackedChecker) {
 
 //Сделать ход
 function makeMove(activeBlackBlock) {
+  console.log('activeBlackBlock', activeBlackBlock)
+  if (activeBlackBlock.id === squareForAttackMove ) {
+    console.log('пешка съедена', ahtung)
+    // ahtung.firstElementChild.remove()
+    ahtung.firstElementChild.className = ''
+  }
   let movedChecker = checkersArray.find((o) => o.active === true) //ищем активную шашку со свойством active = true, которая всегда только одна;
-
-  // console.log(movedChecker);
+  let movedCheckerNode = document.querySelector('[active=true]')
+  // console.log('movedCheckerNode', movedCheckerNode);
 
   let newChecker = checkersArray.find((o) => o.name === activeBlackBlock.id) //это будущая шашка, которая появится на подсвеченном блоке
 
@@ -238,23 +264,36 @@ function makeMove(activeBlackBlock) {
     `#${movedChecker.name}`
   ).firstElementChild // сам div-шашка
 
-  // console.log(removedCheckerDiv);
+  // console.log('removedCheckerDiv', removedCheckerDiv);
 
   //Манипуляция с классами контейнеров и переписывание свойств вовлечённых в ход объектов из массива
   if (movedChecker.color === 1) {
     activeBlackBlock.firstElementChild.classList.add('checker', 'white-checker')
+    // let createElement = document.createElement('div')
+    // createElement.classList.add('checker', 'white-checker')
+    // createElement.setAttribute('position', activeBlackBlock.id)
+    // activeBlackBlock.appendChild(createElement)
     newChecker.color = 1
+    
   }
   if (movedChecker.color === 2) {
     activeBlackBlock.firstElementChild.classList.add('checker', 'black-checker')
     newChecker.color = 2
+    // let createElement = document.createElement('div')
+    // createElement.classList.add('checker', 'black-checker')
+    // createElement.setAttribute('position', activeBlackBlock.id)
+    // activeBlackBlock.appendChild(createElement)
   }
   // Вот на этой строке надо что-то написать, чтобы съедаемая шашка удалялась, у которой свойство объекта attacked = true
   removedCheckerDiv.className = ''
+  // removedCheckerDiv.remove();
   movedChecker.color = 0
   movedChecker.active = false
   movedChecker.attacked = false
   movedChecker.attacking = false
+  movedCheckerNode.setAttribute('active', false)
+  movedCheckerNode.setAttribute('attacked', false)
+  movedCheckerNode.setAttribute('attacking', false)
   for (let blackBlock of blackBlocks) {
     blackBlock.classList.remove('active-block')
   }
@@ -271,6 +310,7 @@ function moveTransition(firsrMove = false) {
     let currentChecker = checkersArray.find(
       (o) => o.name === checker.parentElement.id
     )
+    // console.log(currentChecker)
     let squaresForMove = checkSquares(currentChecker)
     // console.log(currentChecker);
     // console.log(squaresForMove);
@@ -283,9 +323,11 @@ function moveTransition(firsrMove = false) {
       // console.log(squaresForMove[i]);
       //Здесь шашка проверяется на возможность съесть, если съесть можно, то присваивается шашке attacking = true, а потом на строке 310 получаем массив из attacking-шашек
       let possibleAttack = checkAttackPossibility(currentChecker, squareForMove)
+      // console.log(possibleAttack)
       // console.log(possibleAttack);
       if (possibleAttack) {
         currentChecker.attacking = true
+        console.log('possibleAttack', possibleAttack);
       }
       // console.log(squareForMove);
       // console.log(squaresForMove);
@@ -328,6 +370,7 @@ function moveTransition(firsrMove = false) {
 function addEventToBoard() {
   board.addEventListener('click', function (e) {
     let clickedChecker = e.target
+    console.log(clickedChecker)
     let isClickActiveBlock = clickedChecker.classList.contains('active-block')
 
     // если ход другого игрока и клик мимо 'active-block' выходим из функции (return)
