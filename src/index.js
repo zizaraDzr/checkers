@@ -89,7 +89,7 @@ function drawSquareTitles() {
   let horizontalTitle = document.querySelectorAll('.square-titles-horizontal')
   let verticalTitle = document.querySelectorAll('.square-titles-vertical')
   for (let letter of horizontalTitle) {
-    for (i = 0; i < 8; i++) {
+    for (let i = 0; i < 8; i++) {
       let createLetter = document.createElement('div')
       createLetter.className = 'square-letter'
       createLetter.textContent = letterArray[i]
@@ -97,7 +97,7 @@ function drawSquareTitles() {
     }
   }
   for (let number of verticalTitle) {
-    for (i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 8; i++) {
       let createNumber = document.createElement('div')
       createNumber.className = 'square-number'
       createNumber.textContent = i
@@ -109,7 +109,7 @@ function drawSquareTitles() {
 drawCheckers()
 drawSquareTitles()
 moveTransition(true)
-addEventToBoard()
+board.addEventListener('click', clickChecker)
 
 function clearArrayOfSquares(squaresArray) {
   let i = 0
@@ -154,17 +154,18 @@ function showMoves(checker) {
   )
   let checkedSquares = checkSquares(currentChecker)
 
-  for (i = 0; i < checkedSquares.length; i++) {
+  for (let i = 0; i < checkedSquares.length; i++) {
     let checkedSquare = checkersArray.find((o) => o.name === checkedSquares[i])
     let square = document.querySelector(`#${checkedSquare.name}`)
     //если шашка атакующая, то рядом с ней есть атакуемые, а значит подсвечиваются следующие клетки за атакуемой
     if (currentChecker.attacking == true && checkedSquare.attacked == true) {
-      squareForAttackMove = checkAttackPossibility(
-        currentChecker,
-        checkedSquare
-      )
-      square = document.querySelector(`#${squareForAttackMove}`)
-      square.classList.add('active-block')
+      let squareForAttackMove = checkAttackPossibility(currentChecker, checkedSquare)
+      console.log(squareForAttackMove)
+      if (squareForAttackMove) {
+        square = document.querySelector(`#${squareForAttackMove}`)
+        square.classList.add('active-block')
+      }
+      
     } else if (
       checkedSquare.color === 0 &&
       currentChecker.color !== 0 &&
@@ -193,14 +194,14 @@ function continueToEat(checkerFromCheckerArray) {
   ).firstElementChild
   let possibleCheckersForTurn = document.querySelectorAll('.checker')
   let checkedSquares = checkSquares(checkerFromCheckerArray)
-  for (i = 0; i < checkedSquares.length; i++) {
+  for (let i = 0; i < checkedSquares.length; i++) {
     let checkedSquare = checkersArray.find((o) => o.name === checkedSquares[i])
-    squareForAttackMove = checkAttackPossibility(
+    let squareForAttackMove = checkAttackPossibility(
       checkerFromCheckerArray,
       checkedSquare
     )
     if (!squareForAttackMove) continue
-    square = document.querySelector(`#${squareForAttackMove}`)
+    let square = document.querySelector(`#${squareForAttackMove}`)
     square.classList.add('active-block')
     checkerFromCheckerArray.attacking = true
     checkerFromCheckerArray.active = true
@@ -227,7 +228,7 @@ function checkAttackPossibility(attackingChecker, attackedChecker) {
     attackedChecker.color == 0 ||
     !attackedChecker
   ) {
-    return
+    return null
   }
   //суть алгоритма описал в тексте
   let indexLetterAttacking = letterArray.indexOf(attackingChecker.name[0])
@@ -246,14 +247,14 @@ function checkAttackPossibility(attackingChecker, attackedChecker) {
   squareToAttack = squareToAttackFirstSymbol + squareToAttackSecondSymbol
   // console.log(squareToAttack);
   if (!squareToAttack) {
-    return
+    return null
   }
   let newPositionOfAttackingChecker = checkersArray.find(
     (o) => o.name === squareToAttack
   )
   // console.log(newPositionOfAttackingChecker);
   if (!newPositionOfAttackingChecker) {
-    return
+    return null
   }
   if (newPositionOfAttackingChecker.color == 0) {
     attackedChecker.attacked = true
@@ -347,7 +348,7 @@ function moveTransition(firstMove = false) {
     )
     let squaresForMove = checkSquares(currentChecker)
 
-    for (i = 0; i < squaresForMove.length; i++) {
+    for (let i = 0; i < squaresForMove.length; i++) {
       let squareForMove = checkersArray.find(
         (o) => o.name === squaresForMove[i]
       )
@@ -381,7 +382,7 @@ function moveTransition(firstMove = false) {
       // console.log(checker);
       checker.classList.remove('player-turn')
     }
-    for (i = 0; i < attackingCheckersArray.length; i++) {
+    for (let i = 0; i < attackingCheckersArray.length; i++) {
       let attackingCheckerDiv = document.querySelector(
         `#${attackingCheckersArray[i].name}`
       )
@@ -397,53 +398,52 @@ function moveTransition(firstMove = false) {
   console.log('функция перехода хода сработала')
 }
 
-function addEventToBoard() {
-  board.addEventListener('click', function (e) {
-    let clickedChecker = e.target
-    let checkersDivCollection = document.querySelectorAll('.checker')
-    let isClickActiveBlock = clickedChecker.classList.contains('active-block')
-    //добавил оформление активной шашки, на которую кликнул
-    if (clickedChecker.classList.contains('checker')) {
-      for (let checker of checkersDivCollection) {
-        checker.classList.remove('active-checker')
-      }
-      clickedChecker.classList.add('active-checker')
-    }
-    // если ход другого игрока и клик мимо 'active-block' выходим из функции (return)
-    if (
-      !clickedChecker.classList.contains('player-turn') &&
-      !isClickActiveBlock
-    ) {
-      return
-    }
+function clickChecker (e) {
+  let clickedChecker = e.target
+  let isClickActiveBlock = clickedChecker.classList.contains('active-block')
 
-    let checkerColor
-    if (turn) {
-      checkerColor = 'white-checker'
-    } else {
-      checkerColor = 'black-checker'
+  // если ход другого игрока и клик мимо 'active-block' выходим из функции (return)
+  if (
+    !clickedChecker.classList.contains('player-turn') &&
+    !isClickActiveBlock
+  ) {
+    return
+  }
+  let checkersDivCollection = document.querySelectorAll('.checker')
+
+  //добавил оформление активной шашки, на которую кликнул
+  if (clickedChecker.classList.contains('checker')) {
+    for (let checker of checkersDivCollection) {
+      checker.classList.remove('active-checker')
     }
-    if (clickedChecker.classList.contains(checkerColor)) {
-      checkersArray.forEach((item) => {
-        item.active = false
-      })
-      checkersArray.forEach((item) => {
-        if (item.name === clickedChecker.parentElement.id) {
-          item.active = true
-        }
-      })
-      showMoves(clickedChecker)
-    }
-    if (isClickActiveBlock) {
-      let movedChecker = makeMove(clickedChecker)
-      if (attackingFlag) {
-        continueToEat(movedChecker) //заново кликать на шашку каждый раз не нужно, она остаётся активной, пока множественное взятие не будет реализовано, надо кликать просто на подсвеченные блоки
+    clickedChecker.classList.add('active-checker')
+  }
+  let checkerColor
+  if (turn) {
+    checkerColor = 'white-checker'
+  } else {
+    checkerColor = 'black-checker'
+  }
+  if (clickedChecker.classList.contains(checkerColor)) {
+    checkersArray.forEach((item) => {
+      item.active = false
+    })
+    checkersArray.forEach((item) => {
+      if (item.name === clickedChecker.parentElement.id) {
+        item.active = true
       }
-      // console.log(attackingFlag);
-      if (!attackingFlag) {
-        //пока attackingFlag не станет false, функция перехода хода не вызывается. attackingFlag изменяет свои значения на 214 и 314 строках
-        moveTransition()
-      }
+    })
+    showMoves(clickedChecker)
+  }
+  if (isClickActiveBlock) {
+    let movedChecker = makeMove(clickedChecker)
+    if (attackingFlag) {
+      continueToEat(movedChecker) //заново кликать на шашку каждый раз не нужно, она остаётся активной, пока множественное взятие не будет реализовано, надо кликать просто на подсвеченные блоки
     }
-  })
+    // console.log(attackingFlag);
+    if (!attackingFlag) {
+      //пока attackingFlag не станет false, функция перехода хода не вызывается. attackingFlag изменяет свои значения на 214 и 314 строках
+      moveTransition()
+    }
+  }
 }
