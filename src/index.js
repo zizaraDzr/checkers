@@ -1,3 +1,5 @@
+import { months } from "./script1";
+console.log(months)
 let checkersArray = [] //в этой переменной будет массив из 32 шашек
 let turn = true //если эта переменная true, то ходят белые, если false, то чёрные
 let attackingFlag = false
